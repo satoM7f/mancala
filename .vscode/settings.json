@@ -1,0 +1,23 @@
+{
+    "files.associations": {
+        "*.embeddedhtml": "html",
+        "cstdarg": "cpp",
+        "bitset": "cpp",
+        "chrono": "cpp",
+        "complex": "cpp",
+        "functional": "cpp",
+        "optional": "cpp",
+        "system_error": "cpp",
+        "type_traits": "cpp",
+        "xlocmon": "cpp",
+        "xlocnum": "cpp",
+        "xtr1common": "cpp",
+        "xstring": "cpp",
+        "format": "cpp",
+        "vector": "cpp",
+        "string": "cpp",
+        "utility": "cpp",
+        "xutility": "cpp",
+        "algorithm": "cpp"
+    }
+}
