@@ -46,10 +46,10 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include<atcoder/dsu>
+// #include<atcoder/dsu>
 
 using namespace std;
-using namespace atcoder;
+// using namespace atcoder;
 
 #define ll long long
 
@@ -132,9 +132,26 @@ constexpr int MOD = 998244353;
 #define pb push_back
 #define mod(a, b) (a % b + b) % b // 出力が正整数になるmod計算
 
+/// constexpr static int bit_len_of_pocket = dec2bin(sum_stone_num).size();
+
+
+
+// dec_numのbit数を数える
+constexpr int calculate_bit_length(unsigned int dec_num) {
+    int bits = 0;
+    while (dec_num > 0) {
+        dec_num >>= 1;
+        ++bits;
+    }
+    return bits > 0 ? bits : 1;  // 最小値として1を保証
+}
+
+constexpr int sum_stone_num = 48;
+constexpr int bit_len_of_pocket = calculate_bit_length(sum_stone_num);
 
 int main() {
-    ll ;
-    in();
+    bitset<bit_len_of_pocket> a(12);
+    cout << a << endl;
+
     return 0;
 }
