@@ -1,0 +1,11 @@
+// vscode設定ファイル
+.vscode
+
+// 実行ファイル
+*.out
+
+// C++バージョン確認
+version.cpp
+
+// プログラムのテスト
+test.cpp

@@ -214,7 +214,7 @@ bool checkEndGame(bitset<full_bit_len> board_bit) {
 
 // ある局面（vector）と選択するポケットの番号から着手した結果の局面（bitset型）を返す
 // ポケットの番号は自分の一番左のポケットが０番，１番，２番と数える
-どちらのターンかわかる必要がある（先頭に1bitつける？）
+// どちらのターンかわかる必要がある（先頭に1bitつける？）
 bitset<full_bit_len> moveBoard(vector<int> current_board,
                                int select_pocket_index) {
     vector<int> next_board_array = current_board;
@@ -244,7 +244,8 @@ unordered_set<bitset<full_bit_len>> calcMoveBoard(
             next_board_set.insert(
                 moveBoard(current_board_array, select_pocket_i));
             // cout << "calcMoveBoardの結果 "; // deb
-            // priBit(moveBoard(current_board_array, select_pocket_i), " ", false); //deb
+            // priBit(moveBoard(current_board_array, select_pocket_i), " ",
+            // false); //deb
         }
     }
     return next_board_set;
@@ -291,9 +292,9 @@ void playGame(bitset<full_bit_len> board_bit) {
 
 // mapをイテレータにして中を見る
 // 隣接リスト用
-void priMapBit(unordered_map<bitset<full_bit_len>,
-                             unordered_set<bitset<full_bit_len>>>
-                   adjacent_list) {
+void priMapBit(
+    unordered_map<bitset<full_bit_len>, unordered_set<bitset<full_bit_len>>>
+        adjacent_list) {
     for (auto itr = adjacent_list.begin(); itr != adjacent_list.end(); ++itr) {
         // itr->firstでkey
         cout << itr->first << ":";
