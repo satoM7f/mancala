@@ -2,6 +2,7 @@
 #include <array>
 #include <bitset>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <set>
 #include <string>
@@ -25,11 +26,15 @@ using namespace std;
 /*パラメータ*/
 // 1P, 2Pのポケットの個数（{1Pのpケットの個数, 2Pのポケットの個数}）
 // constexpr static int pocket_num_list[2] = {6, 6};
-constexpr array<int, 2> pocket_num_list = {6, 6};
+constexpr array<int, 2> pocket_num_list = {2, 2};
 // 最初に各ポケットに入っている石の個数
-constexpr int default_stone_num = 2;
+constexpr int default_stone_num = 1;
 // 両サイドにある，石を溜めるポケットの個数
 // constexpr static int trash_pocket_num = 2;
+// ポケットの個数の多い方（1Pと2Pで大きい値）  三項演算子許して...
+constexpr int max_pocket_num = (pocket_num_list[0] < pocket_num_list[1])
+                                   ? pocket_num_list[1]
+                                   : pocket_num_list[0];
 
 /*定数関数*/
 // dec_numのbit数を数える
@@ -54,10 +59,11 @@ static bool current_turn = false;
 constexpr int bit_len_of_pocket = calculate_bit_length(sum_stone_num);
 // bit列の長さ
 constexpr int full_bit_len = sum_pocket_num * bit_len_of_pocket;
-// 局面の隣接リスト（key：局面，value：keyの局面に隣接する局面）
-unordered_map<bitset<full_bit_len>, set<bitset<full_bit_len>>> adjacent_list;
+// 局面の隣接リスト（key：局面，value：keyの局面に隣接する局面の配列（1Pと2Pで多いポケットの個数分確保））
+unordered_map<bitset<full_bit_len>, unordered_set<bitset<full_bit_len>>>
+    adjacent_list;
 // keyの局面を計算したかの情報を持つmap
-unordered_map<bitset<full_bit_len>, int> confirmed_board;
+unordered_map<bitset<full_bit_len>, bool> confirmed_board;
 // 1Pと2Pどちらが勝つか（非不偏ゲームのためPorNではない，L,R,...？）
 // static unordered_map<bitset<full_bit_len>, int> winner;
 
@@ -142,31 +148,65 @@ vector<int> initBoardArray() {
 
 // 任意の型のvectorを表示
 template <typename T>
-void priVec(vector<T> vec, string sep = "\n") {
-    cout << "---priVec--->" << endl;
+void priVec(vector<T> vec, string sep = " ", bool print_deco = true) {
+    if (print_deco) cout << "--priVec-->";
     for (int i = 0; i < vec.size(); i++) cout << vec[i] << sep;
     if (sep != "\n") cout << endl;
-    cout << "<---" << endl;
+}
+
+// 任意の型のarrayを表示
+template <typename T>
+void priAry(array<T, full_bit_len> ary, string sep = " ",
+            bool print_deco = true) {
+    if (print_deco) cout << "--priVec-->";
+    for (int i = 0; i < ary.size(); i++) cout << ary[i] << sep;
+    if (sep != "\n") cout << endl;
+}
+
+void priBit(bitset<full_bit_len> bit, string sep = " ",
+            bool print_deco = true) {
+    string bit_string = bit.to_string();
+    if (print_deco) cout << "--priBit-->";
+    for (int i = 0; i < sum_pocket_num; i++) {
+        cout << bit_string.substr(i * bit_len_of_pocket, bit_len_of_pocket)
+             << sep;
+    }
+    cout << endl;
 }
 
 // ゲームが終了条件を満たしているかチェック
 // bitset型でやったほうが速そうだからvector型は使わない
 bool checkEndGame(bitset<full_bit_len> board_bit) {
-    bitset<full_bit_len> check_bit;
+    // priBit(board_bit); // deb
+    bitset<full_bit_len> check_bit = board_bit;
 
     /*1Pが終了条件を満たしているかチェック*/
     // チェック範囲のビットを残してできるだけ右に詰める
-    board_bit = board_bit >> ((pocket_num_list[1] + 1) * bit_len_of_pocket);
-    // チェック範囲のビットを残してできるだけ左に詰める
-    board_bit = board_bit << ((sum_pocket_num - 1) * bit_len_of_pocket);
+    // check_bit = check_bit >> ((sum_pocket_num - pocket_num_list[0]) *
+    // bit_len_of_pocket); priBit(check_bit); //deb
     // .any()：1のビットが一つも存在しなければfalse，一つでも存在すればtrueを返す
-    if (!board_bit.any()) return true;
+    if (!check_bit.any()) {
+        // cout << "end" << endl; // deb
+        return true;
+    }
+
+    // チェックするbit列のリセット
+    check_bit = board_bit;
 
     /*2Pが終了条件を満たしているかチェック*/
+    // チェック範囲のビットを残してできるだけ右に詰める
+    check_bit = check_bit >> bit_len_of_pocket;
+    // priBit(check_bit); //deb
     // チェック範囲のビットを残してできるだけ左に詰める
-    board_bit = board_bit << ((sum_pocket_num - 1) * bit_len_of_pocket);
+    check_bit = check_bit << ((sum_pocket_num - pocket_num_list[1]) *
+                              bit_len_of_pocket);
+    // priBit(check_bit); // deb
+    // cout << (sum_pocket_num - pocket_num_list[1]) << endl; // deb
     // .any()：1のビットが一つも存在しなければfalse，一つでも存在すればtrueを返す
-    if (!board_bit.any()) return true;
+    if (!check_bit.any()) {
+        // cout << "end" << endl; // deb
+        return true;
+    }
 
     // 上のどちらの終了条件も満たしていないならfalse
     return false;
@@ -174,36 +214,44 @@ bool checkEndGame(bitset<full_bit_len> board_bit) {
 
 // ある局面（vector）と選択するポケットの番号から着手した結果の局面（bitset型）を返す
 // ポケットの番号は自分の一番左のポケットが０番，１番，２番と数える
+どちらのターンかわかる必要がある（先頭に1bitつける？）
 bitset<full_bit_len> moveBoard(vector<int> current_board,
-                               int remove_pocket_index) {
+                               int select_pocket_index) {
     vector<int> next_board_array = current_board;
-    int remove_stone_num = next_board_array[remove_pocket_index];
+    int remove_stone_num = next_board_array[select_pocket_index];
     // indexのポケットの石を全て取り除く
-    next_board_array[remove_pocket_index] = 0;
+    next_board_array[select_pocket_index] = 0;
     // 取り除いた石の個数回，順番に各ポケットの石の個数を+1する
-    for (int i = 0; i < remove_stone_num; i++) {
-        next_board_array[(remove_pocket_index + i) % sum_pocket_num]++;
+    for (int i = 1; i <= remove_stone_num; i++) {
+        next_board_array[(select_pocket_index + i) % sum_pocket_num]++;
     }
     return array2bit(next_board_array);
 }
 
 // ある局面（vector型）から可能な着手を一手したときの着手後の盤面を全て返す
-set<bitset<full_bit_len>> calcMoveBoard(vector<int> current_board_array) {
-    // 一手先の盤面のリスト
-    set<bitset<full_bit_len>> next_board_set;
+unordered_set<bitset<full_bit_len>> calcMoveBoard(
+    vector<int> current_board_array) {
+    // 一手先の盤面のセット
+    unordered_set<bitset<full_bit_len>> next_board_set = {};
 
-    // next_board_setは遷移の個数個の要素を持つ
+    // next_board_listは遷移の個数個の要素を持つ
     // 遷移の個数はそのターンのプレイヤーのポケットの石の個数
     // pocket_num_list[current_turn]がそれ
     for (int select_pocket_i = 0;
          select_pocket_i < pocket_num_list[current_turn]; select_pocket_i++) {
-        next_board_set.insert(moveBoard(current_board_array, select_pocket_i));
+        // select_pocket_i番目のポケットに石があるならそこに着手した結果の盤面をnext_board_setに入れる
+        if (current_board_array[select_pocket_i] != 0) {
+            next_board_set.insert(
+                moveBoard(current_board_array, select_pocket_i));
+            // cout << "calcMoveBoardの結果 "; // deb
+            // priBit(moveBoard(current_board_array, select_pocket_i), " ", false); //deb
+        }
     }
     return next_board_set;
 }
 
 // ある局面（bitset型）から可能な着手を一手したときの着手後の盤面を全て返す
-set<bitset<full_bit_len>> calcMoveBoard(
+unordered_set<bitset<full_bit_len>> calcMoveBoard(
     bitset<full_bit_len> current_board_bit) {
     return calcMoveBoard(bit2array(current_board_bit));
 }
@@ -212,8 +260,17 @@ set<bitset<full_bit_len>> calcMoveBoard(
 // グローバル変数の隣接リストができる
 // 再帰が深くなりすぎるとメモリが心配
 void playGame(bitset<full_bit_len> board_bit) {
+    cout << ">>>>> ";  // deb
+    priBit(board_bit); // deb
+
     // その局面が終了条件を満たしているか判定
-    if(checkEndGame(board_bit)) return;
+    if (checkEndGame(board_bit) || confirmed_board[board_bit]) {
+        cout << "return (end)board" << endl;
+        return;
+    }
+
+    cout << ">>>   ";  // deb
+    priBit(board_bit); // deb
 
     // 次の局面を計算し隣接リストに登録
     adjacent_list[board_bit] = calcMoveBoard(board_bit);
@@ -223,8 +280,28 @@ void playGame(bitset<full_bit_len> board_bit) {
     current_turn ^= 1;
 
     // 遷移した局面からさらにplayGameする
-    for(bitset<full_bit_len> adjacent_board  : adjacent_list[board_bit]){
+    for (bitset<full_bit_len> adjacent_board : adjacent_list[board_bit]) {
+        cout << "隣接";                     // deb
+        priBit(adjacent_board, " ", false); // deb
         playGame(adjacent_board);
+    }
+
+    return;
+}
+
+// mapをイテレータにして中を見る
+// 隣接リスト用
+void priMapBit(unordered_map<bitset<full_bit_len>,
+                             unordered_set<bitset<full_bit_len>>>
+                   adjacent_list) {
+    for (auto itr = adjacent_list.begin(); itr != adjacent_list.end(); ++itr) {
+        // itr->firstでkey
+        cout << itr->first << ":";
+        // itr->secondでvalue
+        for (auto adjacent_board : itr->second) {
+            cout << adjacent_board << ",";
+        }
+        cout << endl;
     }
 }
 
@@ -232,19 +309,22 @@ int main() {
     // cout << dec2bin(10) << endl;
 
     vector<int> board_array = initBoardArray();
-    // vector<int> board_array = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6};
-    priVec(board_array, " ");
+    // priVec(board_array, " ");
 
-    string board_bit = board_array2bits(board_array);
-    cout << board_bit << endl;
+    bitset<full_bit_len> board_bit = array2bit(board_array);
+    // priBit(board_bit);
+
+    playGame(board_bit);
+
+    priMapBit(adjacent_list);
 
     /*
     vector<int> board_bit_to_array = bits2board_array(board_bit);
     priVec(board_bit_to_array, " ");
     */
 
-    bool is_end = checkEndGame(board_bit);
-    cout << is_end << endl;
+    // bool is_end = checkEndGame(board_bit);
+    // cout << is_end << endl;
 
     return 0;
 }
