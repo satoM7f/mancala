@@ -26,9 +26,9 @@ using namespace std;
 /*パラメータ*/
 // 1P, 2Pのポケットの個数（{1Pのpケットの個数, 2Pのポケットの個数}）
 // constexpr static int pocket_num_list[2] = {6, 6};
-constexpr array<int, 2> pocket_num_list = {2, 2};
+constexpr array<int, 2> pocket_num_list = {6, 6};
 // 最初に各ポケットに入っている石の個数
-constexpr int default_stone_num = 1;
+constexpr int default_stone_num = 4;
 // 両サイドにある，石を溜めるポケットの個数
 // constexpr static int trash_pocket_num = 2;
 // ポケットの個数の多い方（1Pと2Pで大きい値）  三項演算子許して...
@@ -163,6 +163,7 @@ void priAry(array<T, full_bit_len> ary, string sep = " ",
     if (sep != "\n") cout << endl;
 }
 
+// bit列を見やすく表示
 void priBit(bitset<full_bit_len> bit, string sep = " ",
             bool print_deco = true) {
     string bit_string = bit.to_string();
@@ -172,6 +173,26 @@ void priBit(bitset<full_bit_len> bit, string sep = " ",
              << sep;
     }
     cout << endl;
+}
+
+// 局面（vector型）をゲームの盤面っぽく表示
+void priBoard(vector<int> vec) {
+    cout << "  ";
+    for (int i = 1; i <= pocket_num_list[1]; i++) cout << vec[vec.size() - i - 1] << " ";
+    cout << endl;
+    cout << vec.back();
+    for(int i = 0; i < max_pocket_num; i++){
+        cout << "  ";
+    }
+    cout << " " << vec[pocket_num_list[0]] << endl;
+    cout << "  ";
+    for (int i = 0; i < pocket_num_list[0]; i++) cout << vec[i] << " ";
+    cout << "\n---" << endl;
+}
+
+// 局面（bitset型）をゲームの盤面っぽく表示
+void priBoard(bitset<full_bit_len> bit) {
+    priBoard(bit2array(bit));
 }
 
 // ゲームが終了条件を満たしているかチェック
@@ -307,25 +328,25 @@ void priMapBit(
 }
 
 int main() {
-    // cout << dec2bin(10) << endl;
-
+    // 局面の初期化
     vector<int> board_array = initBoardArray();
-    // priVec(board_array, " ");
+    // priVec(board_array);
 
+    // 局面を配列にする
     bitset<full_bit_len> board_bit = array2bit(board_array);
     // priBit(board_bit);
 
-    playGame(board_bit);
+    // 局面を表示
+    priBoard(board_array);
+    priBoard(moveBoard(board_array, 1));
 
-    priMapBit(adjacent_list);
-
-    /*
-    vector<int> board_bit_to_array = bits2board_array(board_bit);
-    priVec(board_bit_to_array, " ");
-    */
 
     // bool is_end = checkEndGame(board_bit);
     // cout << is_end << endl;
+
+    // playGame(board_bit);
+
+    // priMapBit(adjacent_list);
 
     return 0;
 }
