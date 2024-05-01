@@ -1,5 +1,6 @@
-// vscode設定ファイル
-.vscode
+// vscode系ファイル
+.vscode/*
+*.code-workspace
 
 // 実行ファイル
 *.out
